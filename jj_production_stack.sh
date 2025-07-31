@@ -141,6 +141,58 @@ DRY_RUN="false"             # Show what would be done without executing
 QUICK_START="false"         # Skip some time-consuming setup steps
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 📝 ENHANCED LOGGING SETUP
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Create log directory and setup comprehensive logging
+setup_logging() {
+    # Create timestamp for this run
+    SCRIPT_START_TIME=$(date '+%Y%m%d_%H%M%S')
+    
+    # Try to create log directory, fallback to /tmp if BASE_DIR doesn't exist yet
+    if [ -d "$(dirname "$BASE_DIR")" ]; then
+        LOG_DIR="$BASE_DIR/logs"
+        mkdir -p "$LOG_DIR" 2>/dev/null || {
+            LOG_DIR="/tmp/setup-logs"
+            mkdir -p "$LOG_DIR"
+        }
+    else
+        LOG_DIR="/tmp/setup-logs"
+        mkdir -p "$LOG_DIR"
+    fi
+    
+    # Create timestamped log file
+    export SETUP_LOG_FILE="$LOG_DIR/setup_${SCRIPT_START_TIME}.log"
+    
+    # Clean up old log files (keep last 10)
+    find "$LOG_DIR" -name "setup_*.log" -type f | sort | head -n -10 | xargs rm -f 2>/dev/null || true
+    
+    # Add session start marker
+    cat >> "$SETUP_LOG_FILE" << EOF
+================================================================================
+SETUP SESSION START: $(date)
+DOMAIN: $DOMAIN
+SERVICE_USER: $SERVICE_USER  
+BASE_DIR: $BASE_DIR
+PID: $$
+================================================================================
+
+EOF
+
+    # Set up comprehensive logging - redirect all output to both console and log file
+    exec > >(tee -a "$SETUP_LOG_FILE")
+    exec 2>&1
+    
+    echo "📝 Logging enabled: $SETUP_LOG_FILE"
+}
+
+# Call logging setup immediately
+setup_logging
+
+# Set up error trapping for logging failures
+trap 'log_failure_exit $?' ERR
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # 🎨 COLOR CODES AND HELPER FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -153,28 +205,42 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
-# Logging functions with timestamps
+# Enhanced logging functions with timestamps (now works with exec redirection)
 log_info() {
-  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${BLUE}[INFO]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${BLUE}[INFO]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${BLUE}[INFO]${NC} $1"
 }
 
 log_success() {
-  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${GREEN}[SUCCESS]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${GREEN}[SUCCESS]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${GREEN}[SUCCESS]${NC} $1"
 }
 
 log_warning() {
-  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${YELLOW}[WARNING]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${YELLOW}[WARNING]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${YELLOW}[WARNING]${NC} $1"
 }
 
 log_error() {
-  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${RED}[ERROR]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${RED}[ERROR]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${RED}[ERROR]${NC} $1"
 }
 
 log_section() {
   echo -e "\n${PURPLE}═══════════════════════════════════════${NC}"
   echo -e "${PURPLE} $1${NC}"
   echo -e "${PURPLE}═══════════════════════════════════════${NC}\n"
-  echo "$(date '+%Y-%m-%d %H:%M:%S') [SECTION] $1" >>"$BASE_DIR/logs/setup.log" 2>/dev/null || true
+}
+
+# Function to add error session end marker for failures
+log_failure_exit() {
+  local exit_code=$1
+  cat >> "$SETUP_LOG_FILE" << EOF
+
+================================================================================
+SETUP SESSION END: $(date)
+STATUS: FAILED (Exit Code: $exit_code)
+================================================================================
+EOF
+  echo ""
+  echo -e "${RED}❌ Setup failed! Check the complete log: ${WHITE}$SETUP_LOG_FILE${NC}"
+  exit $exit_code
 }
 
 # Enhanced execution function with logging
@@ -190,7 +256,7 @@ execute_cmd() {
   log_info "Executing: $description"
 
   if [ "$ENABLE_DEBUG_LOGS" = "true" ]; then
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Executing: $cmd" >>"$BASE_DIR/logs/setup.log" 2>/dev/null || true
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Executing: $cmd"
   fi
 
   if eval "$cmd"; then
@@ -2228,6 +2294,19 @@ main() {
   echo -e "- ${RED}Set up external backup storage (S3)${NC}"
   echo ""
   echo -e "${GREEN}🎉 Your enhanced, production-ready containerized stack is ready!${NC}"
+  
+  # Add session end marker to log
+  cat >> "$SETUP_LOG_FILE" << EOF
+
+================================================================================
+SETUP SESSION END: $(date)
+TOTAL RUNTIME: $(($(date +%s) - $(date -d "$SCRIPT_START_TIME" +%s 2>/dev/null || echo 0)))s
+STATUS: SUCCESS
+================================================================================
+EOF
+
+  echo ""
+  echo -e "${BLUE}📝 Complete setup log saved to: ${WHITE}$SETUP_LOG_FILE${NC}"
 }
 
 # Run main function
