@@ -6,35 +6,41 @@
 # Optimized for Debian 12 Production Environments
 # ═══════════════════════════════════════════════════════════════════════════════
 
-set -e  # Exit on any error
+set -e # Exit on any error
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 🔧 USER CONFIGURATION SECTION - MODIFY THESE VALUES
+# 🔧 USER CONFIGURATION SECTION - REQUIRED: MODIFY THESE VALUES BEFORE RUNNING
 # ═══════════════════════════════════════════════════════════════════════════════
+#
+# IMPORTANT: This script will NOT run with default values. You must configure
+# at minimum the DOMAIN variable below with your actual domain name.
+#
+# Usage: bash setup.sh
+#
 
-# DOMAIN CONFIGURATION
-DOMAIN="${1:-}"                                    # Primary domain (required as argument)
-EMAIL="admin@${DOMAIN}"                           # Email for Let's Encrypt and notifications
-COUNTRY_CODE="US"                                 # Country code for SSL certificates
-STATE_NAME="California"                           # State for SSL certificates
-CITY_NAME="San Francisco"                         # City for SSL certificates
-ORGANIZATION="Your Organization"                  # Organization name for certificates
+# DOMAIN CONFIGURATION - REQUIRED: CHANGE THESE VALUES
+DOMAIN="example.com"             # ⚠️  REQUIRED: Change to your actual domain
+EMAIL="admin@${DOMAIN}"          # Email for Let's Encrypt and notifications
+COUNTRY_CODE="US"                # Country code for SSL certificates
+STATE_NAME="California"          # State for SSL certificates
+CITY_NAME="San Francisco"        # City for SSL certificates
+ORGANIZATION="Your Organization" # Organization name for certificates
 
 # SERVICE USER CONFIGURATION
-SERVICE_USER="supabase-services"                  # User that will run all services
-SERVICE_GROUP="supabase-services"                # Group for the service user
-SERVICE_SHELL="/bin/bash"                        # Shell for service user
+SERVICE_USER="supabase-services"  # User that will run all services
+SERVICE_GROUP="supabase-services" # Group for the service user
+SERVICE_SHELL="/bin/bash"         # Shell for service user
 
 # DIRECTORY CONFIGURATION
-BASE_DIR="/home/${SERVICE_USER}"                  # Base directory for all services
-BACKUP_RETENTION_DAYS="30"                       # How many days to keep backups
-LOG_RETENTION_DAYS="14"                          # How many days to keep logs
-CONFIG_BACKUP_RETENTION="90"                     # Config backup retention (days)
+BASE_DIR="/home/${SERVICE_USER}" # Base directory for all services
+BACKUP_RETENTION_DAYS="30"       # How many days to keep backups
+LOG_RETENTION_DAYS="14"          # How many days to keep logs
+CONFIG_BACKUP_RETENTION="90"     # Config backup retention (days)
 
 # NETWORK CONFIGURATION
-FRONTEND_NETWORK="frontend-net"                   # Network for NGINX -> Apps
-BACKEND_NETWORK="backend-net"                     # Network for Apps -> Database
-MGMT_NETWORK="mgmt-net"                          # Network for monitoring/management
+FRONTEND_NETWORK="frontend-net" # Network for NGINX -> Apps
+BACKEND_NETWORK="backend-net"   # Network for Apps -> Database
+MGMT_NETWORK="mgmt-net"         # Network for monitoring/management
 
 # SERVICE PORTS (Internal Docker networking)
 SUPABASE_API_PORT="8000"
@@ -48,91 +54,91 @@ LOKI_PORT="3100"
 ALERTMANAGER_PORT="9093"
 
 # CONTAINER RESOURCE LIMITS
-POSTGRES_MEMORY_LIMIT="2G"                       # PostgreSQL memory limit
-POSTGRES_CPU_LIMIT="1.0"                         # PostgreSQL CPU limit
-N8N_MEMORY_LIMIT="1G"                            # N8N memory limit
-N8N_CPU_LIMIT="0.5"                              # N8N CPU limit
-NGINX_MEMORY_LIMIT="512M"                        # NGINX memory limit
-NGINX_CPU_LIMIT="0.5"                            # NGINX CPU limit
+POSTGRES_MEMORY_LIMIT="2G" # PostgreSQL memory limit
+POSTGRES_CPU_LIMIT="1.0"   # PostgreSQL CPU limit
+N8N_MEMORY_LIMIT="1G"      # N8N memory limit
+N8N_CPU_LIMIT="0.5"        # N8N CPU limit
+NGINX_MEMORY_LIMIT="512M"  # NGINX memory limit
+NGINX_CPU_LIMIT="0.5"      # NGINX CPU limit
 
 # CONTAINER SECURITY CONFIGURATION
-APPARMOR_ENABLED="true"                          # Enable AppArmor profiles for containers
-CONTAINER_USER_NAMESPACES="true"                # Enable user namespaces
-CONTAINER_NO_NEW_PRIVS="true"                   # Disable privilege escalation
-CONTAINER_READ_ONLY_ROOT="false"                # Read-only root filesystem (careful!)
-FAIL2BAN_ENABLED="true"                         # Enable fail2ban intrusion prevention
-UFW_ENABLED="true"                              # Enable UFW firewall
+APPARMOR_ENABLED="true"          # Enable AppArmor profiles for containers
+CONTAINER_USER_NAMESPACES="true" # Enable user namespaces
+CONTAINER_NO_NEW_PRIVS="true"    # Disable privilege escalation
+CONTAINER_READ_ONLY_ROOT="false" # Read-only root filesystem (careful!)
+FAIL2BAN_ENABLED="true"          # Enable fail2ban intrusion prevention
+UFW_ENABLED="true"               # Enable UFW firewall
 
 # BACKUP CONFIGURATION
-BACKUP_SCHEDULE="0 2 * * *"                     # Daily at 2 AM
-BACKUP_S3_BUCKET=""                             # S3 bucket for offsite backups (optional)
-BACKUP_ENCRYPTION="true"                        # Encrypt backups
-BACKUP_COMPRESSION_LEVEL="6"                    # Compression level (1-9)
-DATABASE_BACKUP_RETENTION="14"                  # Database backup retention (days)
-VOLUME_BACKUP_RETENTION="7"                     # Volume backup retention (days)
+BACKUP_SCHEDULE="0 2 * * *"    # Daily at 2 AM
+BACKUP_S3_BUCKET=""            # S3 bucket for offsite backups (optional)
+BACKUP_ENCRYPTION="true"       # Encrypt backups
+BACKUP_COMPRESSION_LEVEL="6"   # Compression level (1-9)
+DATABASE_BACKUP_RETENTION="14" # Database backup retention (days)
+VOLUME_BACKUP_RETENTION="7"    # Volume backup retention (days)
 
 # MONITORING CONFIGURATION
-ENABLE_MONITORING="true"                        # Deploy Prometheus/Grafana stack
-ENABLE_LOGGING="true"                           # Deploy centralized logging (Loki)
-ENABLE_ALERTING="true"                          # Enable email/slack alerts
-ALERT_EMAIL="alerts@${DOMAIN}"                 # Email for alerts
-SLACK_WEBHOOK=""                                # Slack webhook URL (optional)
-PROMETHEUS_RETENTION="15d"                     # Prometheus data retention
-GRAFANA_SESSION_TIMEOUT="24h"                  # Grafana session timeout
+ENABLE_MONITORING="true"       # Deploy Prometheus/Grafana stack
+ENABLE_LOGGING="true"          # Deploy centralized logging (Loki)
+ENABLE_ALERTING="true"         # Enable email/slack alerts
+ALERT_EMAIL="alerts@${DOMAIN}" # Email for alerts
+SLACK_WEBHOOK=""               # Slack webhook URL (optional)
+PROMETHEUS_RETENTION="15d"     # Prometheus data retention
+GRAFANA_SESSION_TIMEOUT="24h"  # Grafana session timeout
 
 # CONTAINER UPDATE CONFIGURATION
-UPDATE_STRATEGY="rolling"                       # rolling, blue-green, or manual
-UPDATE_HEALTH_CHECK_TIMEOUT="300"              # Health check timeout (seconds)
-UPDATE_ROLLBACK_ON_FAILURE="true"              # Auto-rollback on failed updates
-PRE_UPDATE_BACKUP="true"                       # Create backup before updates
-IMAGE_CLEANUP_RETENTION="5"                    # Keep last 5 image versions
+UPDATE_STRATEGY="rolling"         # rolling, blue-green, or manual
+UPDATE_HEALTH_CHECK_TIMEOUT="300" # Health check timeout (seconds)
+UPDATE_ROLLBACK_ON_FAILURE="true" # Auto-rollback on failed updates
+PRE_UPDATE_BACKUP="true"          # Create backup before updates
+IMAGE_CLEANUP_RETENTION="5"       # Keep last 5 image versions
 
 # N8N CONFIGURATION
-N8N_DEFAULT_USER="admin"                        # Default N8N username
-N8N_TIMEZONE="UTC"                              # N8N timezone
-N8N_WEBHOOK_TUNNEL_URL=""                       # Webhook tunnel URL (optional)
-N8N_EXECUTION_TIMEOUT="3600"                   # Execution timeout (seconds)
-N8N_MAX_EXECUTION_HISTORY="100"                # Max execution history
+N8N_DEFAULT_USER="admin"        # Default N8N username
+N8N_TIMEZONE="UTC"              # N8N timezone
+N8N_WEBHOOK_TUNNEL_URL=""       # Webhook tunnel URL (optional)
+N8N_EXECUTION_TIMEOUT="3600"    # Execution timeout (seconds)
+N8N_MAX_EXECUTION_HISTORY="100" # Max execution history
 
 # SUPABASE CONFIGURATION
-SUPABASE_DB_NAME="postgres"                     # Default database name
-SUPABASE_AUTH_SITE_URL="https://${DOMAIN}"     # Auth redirect URL
-SUPABASE_SMTP_HOST=""                           # SMTP server for auth emails (optional)
-SUPABASE_SMTP_PORT="587"                       # SMTP port
-SUPABASE_SMTP_USER=""                           # SMTP username
-SUPABASE_MAX_CONNECTIONS="100"                 # Max database connections
-SUPABASE_SHARED_BUFFERS="256MB"                # PostgreSQL shared buffers
+SUPABASE_DB_NAME="postgres"                # Default database name
+SUPABASE_AUTH_SITE_URL="https://${DOMAIN}" # Auth redirect URL
+SUPABASE_SMTP_HOST=""                      # SMTP server for auth emails (optional)
+SUPABASE_SMTP_PORT="587"                   # SMTP port
+SUPABASE_SMTP_USER=""                      # SMTP username
+SUPABASE_MAX_CONNECTIONS="100"             # Max database connections
+SUPABASE_SHARED_BUFFERS="256MB"            # PostgreSQL shared buffers
 
 # NGINX CONFIGURATION
-NGINX_WORKER_PROCESSES="auto"                  # NGINX worker processes
-NGINX_WORKER_CONNECTIONS="1024"               # NGINX worker connections
-NGINX_CLIENT_MAX_BODY_SIZE="100M"             # Max upload size
-NGINX_RATE_LIMIT_API="10r/s"                  # API rate limit
-NGINX_RATE_LIMIT_GENERAL="30r/s"              # General rate limit
-NGINX_RATE_LIMIT_WEBHOOKS="100r/s"            # Webhook rate limit
-NGINX_KEEPALIVE_TIMEOUT="65"                  # Keep-alive timeout
-NGINX_GZIP_COMPRESSION="6"                    # Gzip compression level
+NGINX_WORKER_PROCESSES="auto"      # NGINX worker processes
+NGINX_WORKER_CONNECTIONS="1024"    # NGINX worker connections
+NGINX_CLIENT_MAX_BODY_SIZE="100M"  # Max upload size
+NGINX_RATE_LIMIT_API="10r/s"       # API rate limit
+NGINX_RATE_LIMIT_GENERAL="30r/s"   # General rate limit
+NGINX_RATE_LIMIT_WEBHOOKS="100r/s" # Webhook rate limit
+NGINX_KEEPALIVE_TIMEOUT="65"       # Keep-alive timeout
+NGINX_GZIP_COMPRESSION="6"         # Gzip compression level
 
 # SSL CONFIGURATION
-SSL_KEY_SIZE="4096"                            # SSL key size (2048 or 4096)
-SSL_CERT_LIFETIME="90"                         # Certificate lifetime in days
-ENABLE_HSTS="true"                             # Enable HTTP Strict Transport Security
-HSTS_MAX_AGE="31536000"                        # HSTS max age in seconds
-SSL_STAPLING="true"                            # Enable OCSP stapling
+SSL_KEY_SIZE="4096"     # SSL key size (2048 or 4096)
+SSL_CERT_LIFETIME="90"  # Certificate lifetime in days
+ENABLE_HSTS="true"      # Enable HTTP Strict Transport Security
+HSTS_MAX_AGE="31536000" # HSTS max age in seconds
+SSL_STAPLING="true"     # Enable OCSP stapling
 
 # LOGGING CONFIGURATION
-LOG_LEVEL="info"                               # Global log level (debug, info, warn, error)
-CONTAINER_LOG_MAX_SIZE="10m"                  # Max log file size per container
-CONTAINER_LOG_MAX_FILES="5"                   # Max log files per container
-CENTRALIZED_LOGGING="true"                    # Send logs to Loki
-AUDIT_LOGGING="true"                          # Enable audit logging
+LOG_LEVEL="info"             # Global log level (debug, info, warn, error)
+CONTAINER_LOG_MAX_SIZE="10m" # Max log file size per container
+CONTAINER_LOG_MAX_FILES="5"  # Max log files per container
+CENTRALIZED_LOGGING="true"   # Send logs to Loki
+AUDIT_LOGGING="true"         # Enable audit logging
 
 # DEVELOPMENT/TESTING FLAGS
-SKIP_HOST_HARDENING="false"                   # Skip OS hardening (development only)
-SKIP_SSL_SETUP="false"                        # Skip SSL certificate generation
-ENABLE_DEBUG_LOGS="false"                     # Enable debug logging
-DRY_RUN="false"                               # Show what would be done without executing
-QUICK_START="false"                           # Skip some time-consuming setup steps
+SKIP_HOST_HARDENING="false" # Skip OS hardening (development only)
+SKIP_SSL_SETUP="false"      # Skip SSL certificate generation
+ENABLE_DEBUG_LOGS="false"   # Enable debug logging
+DRY_RUN="false"             # Show what would be done without executing
+QUICK_START="false"         # Skip some time-consuming setup steps
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 🎨 COLOR CODES AND HELPER FUNCTIONS
@@ -149,95 +155,95 @@ NC='\033[0m' # No Color
 
 # Logging functions with timestamps
 log_info() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${BLUE}[INFO]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${BLUE}[INFO]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${BLUE}[INFO]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${BLUE}[INFO]${NC} $1"
 }
 
 log_success() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${GREEN}[SUCCESS]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${GREEN}[SUCCESS]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${GREEN}[SUCCESS]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${GREEN}[SUCCESS]${NC} $1"
 }
 
 log_warning() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${YELLOW}[WARNING]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${YELLOW}[WARNING]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${YELLOW}[WARNING]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${YELLOW}[WARNING]${NC} $1"
 }
 
 log_error() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${RED}[ERROR]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${RED}[ERROR]${NC} $1"
+  echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${RED}[ERROR]${NC} $1" | tee -a "$BASE_DIR/logs/setup.log" 2>/dev/null || echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${RED}[ERROR]${NC} $1"
 }
 
 log_section() {
-    echo -e "\n${PURPLE}═══════════════════════════════════════${NC}"
-    echo -e "${PURPLE} $1${NC}"
-    echo -e "${PURPLE}═══════════════════════════════════════${NC}\n"
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [SECTION] $1" >> "$BASE_DIR/logs/setup.log" 2>/dev/null || true
+  echo -e "\n${PURPLE}═══════════════════════════════════════${NC}"
+  echo -e "${PURPLE} $1${NC}"
+  echo -e "${PURPLE}═══════════════════════════════════════${NC}\n"
+  echo "$(date '+%Y-%m-%d %H:%M:%S') [SECTION] $1" >>"$BASE_DIR/logs/setup.log" 2>/dev/null || true
 }
 
 # Enhanced execution function with logging
 execute_cmd() {
-    local cmd="$1"
-    local description="${2:-$cmd}"
-    
-    if [ "$DRY_RUN" = "true" ]; then
-        echo -e "${CYAN}[DRY RUN]${NC} Would execute: $description"
-        return 0
-    fi
-    
-    log_info "Executing: $description"
-    
-    if [ "$ENABLE_DEBUG_LOGS" = "true" ]; then
-        echo "$(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Executing: $cmd" >> "$BASE_DIR/logs/setup.log" 2>/dev/null || true
-    fi
-    
-    if eval "$cmd"; then
-        log_success "Completed: $description"
-        return 0
-    else
-        local exit_code=$?
-        log_error "Failed: $description (exit code: $exit_code)"
-        return $exit_code
-    fi
+  local cmd="$1"
+  local description="${2:-$cmd}"
+
+  if [ "$DRY_RUN" = "true" ]; then
+    echo -e "${CYAN}[DRY RUN]${NC} Would execute: $description"
+    return 0
+  fi
+
+  log_info "Executing: $description"
+
+  if [ "$ENABLE_DEBUG_LOGS" = "true" ]; then
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [DEBUG] Executing: $cmd" >>"$BASE_DIR/logs/setup.log" 2>/dev/null || true
+  fi
+
+  if eval "$cmd"; then
+    log_success "Completed: $description"
+    return 0
+  else
+    local exit_code=$?
+    log_error "Failed: $description (exit code: $exit_code)"
+    return $exit_code
+  fi
 }
 
 # Container management functions
 docker_cmd() {
-    local cmd="$1"
-    local docker_env="export DOCKER_HOST=unix:///run/user/$SERVICE_UID/docker.sock && export PATH=$BASE_DIR/bin:\$PATH"
-    
-    execute_cmd "sudo -u $SERVICE_USER bash -c '$docker_env && $cmd'" "$cmd"
+  local cmd="$1"
+  local docker_env="export DOCKER_HOST=unix:///run/user/$SERVICE_UID/docker.sock && export PATH=$BASE_DIR/bin:\$PATH"
+
+  execute_cmd "sudo -u $SERVICE_USER bash -c '$docker_env && $cmd'" "$cmd"
 }
 
 # Wait for service to be healthy
 wait_for_service_health() {
-    local service_name="$1"
-    local timeout="${2:-300}"
-    local interval="${3:-10}"
-    local elapsed=0
-    
-    log_info "Waiting for $service_name to become healthy (timeout: ${timeout}s)..."
-    
-    while [ $elapsed -lt $timeout ]; do
-        if docker_cmd "docker ps --filter name=$service_name --filter health=healthy --format '{{.Names}}'" | grep -q "$service_name"; then
-            log_success "$service_name is healthy"
-            return 0
-        fi
-        
-        sleep $interval
-        elapsed=$((elapsed + interval))
-        echo -n "."
-    done
-    
-    log_error "$service_name failed to become healthy within ${timeout} seconds"
-    return 1
+  local service_name="$1"
+  local timeout="${2:-300}"
+  local interval="${3:-10}"
+  local elapsed=0
+
+  log_info "Waiting for $service_name to become healthy (timeout: ${timeout}s)..."
+
+  while [ $elapsed -lt $timeout ]; do
+    if docker_cmd "docker ps --filter name=$service_name --filter health=healthy --format '{{.Names}}'" | grep -q "$service_name"; then
+      log_success "$service_name is healthy"
+      return 0
+    fi
+
+    sleep $interval
+    elapsed=$((elapsed + interval))
+    echo -n "."
+  done
+
+  log_error "$service_name failed to become healthy within ${timeout} seconds"
+  return 1
 }
 
 # Generate secure passwords and secrets
 generate_password() {
-    local length=${1:-32}
-    openssl rand -base64 $((length * 3 / 4)) | tr -d "=+/" | cut -c1-${length}
+  local length=${1:-32}
+  openssl rand -base64 $((length * 3 / 4)) | tr -d "=+/" | cut -c1-${length}
 }
 
 generate_secret() {
-    local length=${1:-64}
-    openssl rand -base64 $((length * 3 / 4)) | tr -d "=+/" | cut -c1-${length}
+  local length=${1:-64}
+  openssl rand -base64 $((length * 3 / 4)) | tr -d "=+/" | cut -c1-${length}
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -245,65 +251,59 @@ generate_secret() {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 check_prerequisites() {
-    log_section "Checking Prerequisites"
-    
-    # Check if running as root
-    if [ "$EUID" -ne 0 ]; then
-        log_error "This script must be run as root (use sudo)"
-        exit 1
+  log_section "Checking Prerequisites"
+
+  # Check domain configuration
+  if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "example.com" ]; then
+    log_error "Domain must be configured in the script header (currently: $DOMAIN)"
+    log_error "Please edit the DOMAIN variable at the top of this script"
+    exit 1
+  fi
+
+  # Validate domain format
+  if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$ ]]; then
+    log_error "Invalid domain format: $DOMAIN"
+    exit 1
+  fi
+
+  log_success "Domain validated: $DOMAIN"
+
+  # Check OS version
+  if ! grep -q "Debian.*12" /etc/os-release; then
+    log_warning "This script is designed for Debian 12. Current OS:"
+    cat /etc/os-release | head -2
+    echo "Continue? (y/N)"
+    read -r confirm
+    if [[ ! $confirm =~ ^[Yy]$ ]]; then
+      exit 1
     fi
-    
-    # Check domain argument
-    if [ -z "$DOMAIN" ]; then
-        log_error "Domain name is required as first argument"
-        echo "Usage: $0 example.com"
-        exit 1
+  fi
+
+  # Check available disk space (minimum 10GB)
+  available_space=$(df / | awk 'NR==2 {print $4}')
+  required_space=$((10 * 1024 * 1024)) # 10GB in KB
+
+  if [ "$available_space" -lt "$required_space" ]; then
+    log_error "Insufficient disk space. Required: 10GB, Available: $((available_space / 1024 / 1024))GB"
+    exit 1
+  fi
+
+  # Check memory (minimum 4GB)
+  total_memory=$(free -m | awk 'NR==2{print $2}')
+  if [ "$total_memory" -lt 4096 ]; then
+    log_warning "Less than 4GB RAM detected. Some services may be unstable."
+  fi
+
+  # Check required commands
+  local required_commands=("curl" "openssl" "docker" "systemctl" "ufw" "gpg")
+  for cmd in "${required_commands[@]}"; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+      log_error "Required command not found: $cmd"
+      exit 1
     fi
-    
-    # Validate domain format
-    if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$ ]]; then
-        log_error "Invalid domain format: $DOMAIN"
-        exit 1
-    fi
-    
-    log_success "Domain validated: $DOMAIN"
-    
-    # Check OS version
-    if ! grep -q "Debian.*12" /etc/os-release; then
-        log_warning "This script is designed for Debian 12. Current OS:"
-        cat /etc/os-release | head -2
-        echo "Continue? (y/N)"
-        read -r confirm
-        if [[ ! $confirm =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    fi
-    
-    # Check available disk space (minimum 10GB)
-    available_space=$(df / | awk 'NR==2 {print $4}')
-    required_space=$((10 * 1024 * 1024)) # 10GB in KB
-    
-    if [ "$available_space" -lt "$required_space" ]; then
-        log_error "Insufficient disk space. Required: 10GB, Available: $((available_space / 1024 / 1024))GB"
-        exit 1
-    fi
-    
-    # Check memory (minimum 4GB)
-    total_memory=$(free -m | awk 'NR==2{print $2}')
-    if [ "$total_memory" -lt 4096 ]; then
-        log_warning "Less than 4GB RAM detected. Some services may be unstable."
-    fi
-    
-    # Check required commands
-    local required_commands=("curl" "openssl" "docker" "systemctl" "ufw" "gpg")
-    for cmd in "${required_commands[@]}"; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            log_error "Required command not found: $cmd"
-            exit 1
-        fi
-    done
-    
-    log_success "Prerequisites check completed"
+  done
+
+  log_success "Prerequisites check completed"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -311,31 +311,31 @@ check_prerequisites() {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 harden_host_os() {
-    if [ "$SKIP_HOST_HARDENING" = "true" ]; then
-        log_warning "Skipping host OS hardening (development mode)"
-        return
-    fi
-    
-    log_section "Hardening Host OS with AppArmor"
-    
-    # Update system packages
-    log_info "Updating system packages..."
-    execute_cmd "apt-get update && apt-get upgrade -y" "System package update"
-    
-    # Install security and monitoring packages
-    log_info "Installing security and monitoring packages..."
-    local security_packages=(
-        "fail2ban" "ufw" "unattended-upgrades" "apt-listchanges" 
-        "needrestart" "apparmor" "apparmor-utils" "apparmor-profiles"
-        "auditd" "htop" "iotop" "netstat-nat" "tcpdump"
-        "rsyslog" "logrotate" "etckeeper"
-    )
-    
-    execute_cmd "apt-get install -y ${security_packages[*]}" "Security packages installation"
-    
-    # Configure automatic security updates
-    log_info "Configuring automatic security updates..."
-    cat > /tmp/50unattended-upgrades << EOF
+  if [ "$SKIP_HOST_HARDENING" = "true" ]; then
+    log_warning "Skipping host OS hardening (development mode)"
+    return
+  fi
+
+  log_section "Hardening Host OS with AppArmor"
+
+  # Update system packages
+  log_info "Updating system packages..."
+  execute_cmd "sudo apt-get update && sudo apt-get upgrade -y" "System package update"
+
+  # Install security and monitoring packages
+  log_info "Installing security and monitoring packages..."
+  local security_packages=(
+    "fail2ban" "ufw" "unattended-upgrades" "apt-listchanges"
+    "needrestart" "apparmor" "apparmor-utils" "apparmor-profiles"
+    "auditd" "htop" "iotop" "netstat-nat" "tcpdump"
+    "rsyslog" "logrotate" "etckeeper"
+  )
+
+  execute_cmd "sudo apt-get install -y ${security_packages[*]}" "Security packages installation"
+
+  # Configure automatic security updates
+  log_info "Configuring automatic security updates..."
+  cat >/tmp/50unattended-upgrades <<EOF
 // Enhanced unattended upgrades configuration
 Unattended-Upgrade::Automatic-Reboot "false";
 Unattended-Upgrade::Automatic-Reboot-Time "02:00";
@@ -346,33 +346,33 @@ Unattended-Upgrade::MailOnlyOnError "true";
 Unattended-Upgrade::SyslogEnable "true";
 Unattended-Upgrade::SyslogFacility "daemon";
 EOF
-    execute_cmd "mv /tmp/50unattended-upgrades /etc/apt/apt.conf.d/50unattended-upgrades" "Unattended upgrades config"
-    execute_cmd "systemctl enable unattended-upgrades" "Enable automatic updates"
-    
-    # Configure UFW firewall with enhanced rules
-    if [ "$UFW_ENABLED" = "true" ]; then
-        log_info "Configuring enhanced UFW firewall..."
-        execute_cmd "ufw --force reset" "Reset UFW"
-        execute_cmd "ufw default deny incoming" "Set default deny incoming"
-        execute_cmd "ufw default allow outgoing" "Set default allow outgoing"
-        
-        # Basic services
-        execute_cmd "ufw allow 22/tcp comment 'SSH'" "Allow SSH"
-        execute_cmd "ufw allow 80/tcp comment 'HTTP'" "Allow HTTP"
-        execute_cmd "ufw allow 443/tcp comment 'HTTPS'" "Allow HTTPS"
-        
-        # Rate limiting for SSH
-        execute_cmd "ufw limit ssh" "Rate limit SSH"
-        
-        # Enable UFW
-        execute_cmd "ufw --force enable" "Enable UFW"
-        log_success "UFW firewall configured with rate limiting"
-    fi
-    
-    # Configure enhanced fail2ban
-    if [ "$FAIL2BAN_ENABLED" = "true" ]; then
-        log_info "Configuring enhanced fail2ban..."
-        cat > /tmp/jail.local << EOF
+  execute_cmd "sudo mv /tmp/50unattended-upgrades /etc/apt/apt.conf.d/50unattended-upgrades" "Unattended upgrades config"
+  execute_cmd "sudo systemctl enable unattended-upgrades" "Enable automatic updates"
+
+  # Configure UFW firewall with enhanced rules
+  if [ "$UFW_ENABLED" = "true" ]; then
+    log_info "Configuring enhanced UFW firewall..."
+    execute_cmd "sudo ufw --force reset" "Reset UFW"
+    execute_cmd "sudo ufw default deny incoming" "Set default deny incoming"
+    execute_cmd "sudo ufw default allow outgoing" "Set default allow outgoing"
+
+    # Basic services
+    execute_cmd "sudo ufw allow 22/tcp comment 'SSH'" "Allow SSH"
+    execute_cmd "sudo ufw allow 80/tcp comment 'HTTP'" "Allow HTTP"
+    execute_cmd "sudo ufw allow 443/tcp comment 'HTTPS'" "Allow HTTPS"
+
+    # Rate limiting for SSH
+    execute_cmd "sudo ufw limit ssh" "Rate limit SSH"
+
+    # Enable UFW
+    execute_cmd "sudo ufw --force enable" "Enable UFW"
+    log_success "UFW firewall configured with rate limiting"
+  fi
+
+  # Configure enhanced fail2ban
+  if [ "$FAIL2BAN_ENABLED" = "true" ]; then
+    log_info "Configuring enhanced fail2ban..."
+    cat >/tmp/jail.local <<EOF
 [DEFAULT]
 # Enhanced fail2ban configuration
 bantime = 3600
@@ -426,32 +426,32 @@ logpath = /var/log/docker.log
 maxretry = 5
 bantime = 1800
 EOF
-        
-        execute_cmd "mv /tmp/jail.local /etc/fail2ban/jail.local" "Install fail2ban config"
-        
-        # Create custom filter for Docker
-        cat > /tmp/docker-auth.conf << EOF
+
+    execute_cmd "sudo mv /tmp/jail.local /etc/fail2ban/jail.local" "Install fail2ban config"
+
+    # Create custom filter for Docker
+    cat >/tmp/docker-auth.conf <<EOF
 [Definition]
 failregex = ^<HOST>.*"(GET|POST).*" (401|403|404) .*$
 ignoreregex =
 EOF
-        execute_cmd "mv /tmp/docker-auth.conf /etc/fail2ban/filter.d/docker-auth.conf" "Install Docker filter"
-        
-        execute_cmd "systemctl enable fail2ban" "Enable fail2ban"
-        execute_cmd "systemctl restart fail2ban" "Start fail2ban"
-        log_success "Enhanced fail2ban configured"
-    fi
-    
-    # Setup AppArmor (Debian native security)
-    if [ "$APPARMOR_ENABLED" = "true" ]; then
-        log_info "Setting up AppArmor for container security..."
-        
-        # Enable AppArmor
-        execute_cmd "systemctl enable apparmor" "Enable AppArmor"
-        execute_cmd "systemctl start apparmor" "Start AppArmor"
-        
-        # Create AppArmor profile for Docker containers
-        cat > /tmp/docker-default << EOF
+    execute_cmd "sudo mv /tmp/docker-auth.conf /etc/fail2ban/filter.d/docker-auth.conf" "Install Docker filter"
+
+    execute_cmd "sudo systemctl enable fail2ban" "Enable fail2ban"
+    execute_cmd "sudo systemctl restart fail2ban" "Start fail2ban"
+    log_success "Enhanced fail2ban configured"
+  fi
+
+  # Setup AppArmor (Debian native security)
+  if [ "$APPARMOR_ENABLED" = "true" ]; then
+    log_info "Setting up AppArmor for container security..."
+
+    # Enable AppArmor
+    execute_cmd "sudo systemctl enable apparmor" "Enable AppArmor"
+    execute_cmd "sudo systemctl start apparmor" "Start AppArmor"
+
+    # Create AppArmor profile for Docker containers
+    cat >/tmp/docker-default <<EOF
 #include <tunables/global>
 
 profile docker-default flags=(attach_disconnected,mediate_deleted) {
@@ -487,15 +487,15 @@ profile docker-default flags=(attach_disconnected,mediate_deleted) {
   /var/tmp/** rw,
 }
 EOF
-        
-        execute_cmd "mv /tmp/docker-default /etc/apparmor.d/docker-default" "Install Docker AppArmor profile"
-        execute_cmd "apparmor_parser -r /etc/apparmor.d/docker-default" "Load Docker AppArmor profile"
-        log_success "AppArmor configured for container security"
-    fi
-    
-    # Configure kernel security parameters
-    log_info "Configuring secure kernel parameters..."
-    cat > /tmp/99-security.conf << EOF
+
+    execute_cmd "sudo mv /tmp/docker-default /etc/apparmor.d/docker-default" "Install Docker AppArmor profile"
+    execute_cmd "sudo apparmor_parser -r /etc/apparmor.d/docker-default" "Load Docker AppArmor profile"
+    log_success "AppArmor configured for container security"
+  fi
+
+  # Configure kernel security parameters
+  log_info "Configuring secure kernel parameters..."
+  cat >/tmp/99-security.conf <<EOF
 # Network security
 net.ipv4.ip_forward = 0
 net.ipv4.conf.all.send_redirects = 0
@@ -525,17 +525,17 @@ fs.protected_hardlinks = 1
 fs.protected_symlinks = 1
 fs.suid_dumpable = 0
 EOF
-    
-    execute_cmd "mv /tmp/99-security.conf /etc/sysctl.d/99-security.conf" "Install kernel security config"
-    execute_cmd "sysctl -p /etc/sysctl.d/99-security.conf" "Apply kernel security settings"
-    
-    # Setup audit logging
-    if [ "$AUDIT_LOGGING" = "true" ]; then
-        log_info "Configuring audit logging..."
-        execute_cmd "systemctl enable auditd" "Enable auditd"
-        
-        # Basic audit rules
-        cat > /tmp/audit.rules << EOF
+
+  execute_cmd "sudo mv /tmp/99-security.conf /etc/sysctl.d/99-security.conf" "Install kernel security config"
+  execute_cmd "sysctl -p /etc/sysctl.d/99-security.conf" "Apply kernel security settings"
+
+  # Setup audit logging
+  if [ "$AUDIT_LOGGING" = "true" ]; then
+    log_info "Configuring audit logging..."
+    execute_cmd "sudo systemctl enable auditd" "Enable auditd"
+
+    # Basic audit rules
+    cat >/tmp/audit.rules <<EOF
 # Enhanced audit rules for container security
 -D
 -b 8192
@@ -566,19 +566,19 @@ EOF
 # Immutable rules (must be last)
 -e 2
 EOF
-        
-        execute_cmd "mv /tmp/audit.rules /etc/audit/rules.d/audit.rules" "Install audit rules"
-        execute_cmd "systemctl restart auditd" "Restart auditd"
-        log_success "Audit logging configured"
-    fi
-    
-    # Setup configuration tracking with etckeeper
-    log_info "Setting up configuration tracking..."
-    execute_cmd "cd /etc && etckeeper init" "Initialize etckeeper"
-    execute_cmd "cd /etc && etckeeper commit 'Initial configuration before container stack setup'" "Initial etckeeper commit"
-    
-    # Configure log rotation
-    cat > /tmp/docker-logs << EOF
+
+    execute_cmd "sudo mv /tmp/audit.rules /etc/audit/rules.d/audit.rules" "Install audit rules"
+    execute_cmd "sudo systemctl restart auditd" "Restart auditd"
+    log_success "Audit logging configured"
+  fi
+
+  # Setup configuration tracking with etckeeper
+  log_info "Setting up configuration tracking..."
+  execute_cmd "cd /etc && etckeeper init" "Initialize etckeeper"
+  execute_cmd "cd /etc && etckeeper commit 'Initial configuration before container stack setup'" "Initial etckeeper commit"
+
+  # Configure log rotation
+  cat >/tmp/docker-logs <<EOF
 /var/log/docker.log {
     daily
     missingok
@@ -592,9 +592,9 @@ EOF
     endscript
 }
 EOF
-    execute_cmd "mv /tmp/docker-logs /etc/logrotate.d/docker-logs" "Configure Docker log rotation"
-    
-    log_success "Host OS hardening completed with AppArmor integration"
+  execute_cmd "sudo mv /tmp/docker-logs /etc/logrotate.d/docker-logs" "Configure Docker log rotation"
+
+  log_success "Host OS hardening completed with AppArmor integration"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -602,82 +602,82 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════════════
 
 setup_container_environment() {
-    log_section "Setting up Enhanced Container Environment"
-    
-    # Create service user if it doesn't exist
-    if ! id "$SERVICE_USER" &>/dev/null; then
-        log_info "Creating service user: $SERVICE_USER"
-        execute_cmd "useradd -r -m -s $SERVICE_SHELL -c 'Container Services User' $SERVICE_USER" "Create service user"
-        execute_cmd "usermod -aG docker $SERVICE_USER" "Add user to docker group"
-        log_success "Service user created"
-    else
-        log_info "Service user already exists"
-    fi
-    
-    # Get user IDs
-    SERVICE_UID=$(id -u $SERVICE_USER)
-    SERVICE_GID=$(id -g $SERVICE_USER)
-    
-    # Create comprehensive directory structure
-    log_info "Creating directory structure..."
-    local directories=(
-        "$BASE_DIR/services/supabase/config/init"
-        "$BASE_DIR/services/supabase/volumes/db/data"
-        "$BASE_DIR/services/supabase/volumes/storage"
-        "$BASE_DIR/services/supabase/volumes/functions"
-        "$BASE_DIR/services/nginx/conf"
-        "$BASE_DIR/services/nginx/ssl"
-        "$BASE_DIR/services/nginx/logs"
-        "$BASE_DIR/services/n8n/data"
-        "$BASE_DIR/services/nextjs/app"
-        "$BASE_DIR/services/certbot/conf"
-        "$BASE_DIR/services/certbot/www"
-        "$BASE_DIR/services/certbot/logs"
-        "$BASE_DIR/services/monitoring/prometheus/data"
-        "$BASE_DIR/services/monitoring/prometheus/config"
-        "$BASE_DIR/services/monitoring/grafana/data"
-        "$BASE_DIR/services/monitoring/grafana/config"
-        "$BASE_DIR/services/monitoring/loki/data"
-        "$BASE_DIR/services/monitoring/alertmanager/data"
-        "$BASE_DIR/scripts"
-        "$BASE_DIR/backups/database"
-        "$BASE_DIR/backups/volumes"
-        "$BASE_DIR/backups/configs"
-        "$BASE_DIR/logs"
-        "$BASE_DIR/secrets"
-        "$BASE_DIR/tmp"
-    )
-    
-    for dir in "${directories[@]}"; do
-        execute_cmd "sudo -u $SERVICE_USER mkdir -p $dir" "Create directory: $dir"
-    done
-    
-    # Set proper permissions
-    execute_cmd "chmod 700 $BASE_DIR/secrets" "Secure secrets directory"
-    execute_cmd "chmod 755 $BASE_DIR/logs" "Set logs permissions"
-    execute_cmd "chmod 755 $BASE_DIR/backups" "Set backups permissions"
-    
-    # Setup rootless Docker if not already installed
-    if ! sudo -u $SERVICE_USER test -f "$BASE_DIR/bin/docker"; then
-        log_info "Installing rootless Docker for $SERVICE_USER..."
-        execute_cmd "sudo -u $SERVICE_USER bash -c 'curl -fsSL https://get.docker.com/rootless | sh'" "Install rootless Docker"
-        
-        # Configure environment
-        execute_cmd "sudo -u $SERVICE_USER bash -c 'echo \"export PATH=$BASE_DIR/bin:\\\$PATH\" >> $BASE_DIR/.bashrc'" "Add Docker to PATH"
-        execute_cmd "sudo -u $SERVICE_USER bash -c 'echo \"export DOCKER_HOST=unix:///run/user/$SERVICE_UID/docker.sock\" >> $BASE_DIR/.bashrc'" "Set Docker host"
-        
-        log_success "Rootless Docker installed"
-    else
-        log_info "Rootless Docker already installed"
-    fi
-    
-    # Configure Docker daemon for production
-    log_info "Configuring Docker daemon for production..."
-    
-    # Create Docker daemon configuration directory
-    execute_cmd "sudo -u $SERVICE_USER mkdir -p $BASE_DIR/.config/docker" "Create Docker config directory"
-    
-    cat > /tmp/daemon.json << EOF
+  log_section "Setting up Enhanced Container Environment"
+
+  # Create service user if it doesn't exist
+  if ! id "$SERVICE_USER" &>/dev/null; then
+    log_info "Creating service user: $SERVICE_USER"
+    execute_cmd "sudo useradd -r -m -s $SERVICE_SHELL -c 'Container Services User' $SERVICE_USER" "Create service user"
+    execute_cmd "sudo usermod -aG docker $SERVICE_USER" "Add user to docker group"
+    log_success "Service user created"
+  else
+    log_info "Service user already exists"
+  fi
+
+  # Get user IDs
+  SERVICE_UID=$(id -u $SERVICE_USER)
+  SERVICE_GID=$(id -g $SERVICE_USER)
+
+  # Create comprehensive directory structure
+  log_info "Creating directory structure..."
+  local directories=(
+    "$BASE_DIR/services/supabase/config/init"
+    "$BASE_DIR/services/supabase/volumes/db/data"
+    "$BASE_DIR/services/supabase/volumes/storage"
+    "$BASE_DIR/services/supabase/volumes/functions"
+    "$BASE_DIR/services/nginx/conf"
+    "$BASE_DIR/services/nginx/ssl"
+    "$BASE_DIR/services/nginx/logs"
+    "$BASE_DIR/services/n8n/data"
+    "$BASE_DIR/services/nextjs/app"
+    "$BASE_DIR/services/certbot/conf"
+    "$BASE_DIR/services/certbot/www"
+    "$BASE_DIR/services/certbot/logs"
+    "$BASE_DIR/services/monitoring/prometheus/data"
+    "$BASE_DIR/services/monitoring/prometheus/config"
+    "$BASE_DIR/services/monitoring/grafana/data"
+    "$BASE_DIR/services/monitoring/grafana/config"
+    "$BASE_DIR/services/monitoring/loki/data"
+    "$BASE_DIR/services/monitoring/alertmanager/data"
+    "$BASE_DIR/scripts"
+    "$BASE_DIR/backups/database"
+    "$BASE_DIR/backups/volumes"
+    "$BASE_DIR/backups/configs"
+    "$BASE_DIR/logs"
+    "$BASE_DIR/secrets"
+    "$BASE_DIR/tmp"
+  )
+
+  for dir in "${directories[@]}"; do
+    execute_cmd "sudo -u $SERVICE_USER mkdir -p $dir" "Create directory: $dir"
+  done
+
+  # Set proper permissions
+  execute_cmd "sudo chmod 700 $BASE_DIR/secrets" "Secure secrets directory"
+  execute_cmd "sudo chmod 755 $BASE_DIR/logs" "Set logs permissions"
+  execute_cmd "sudo chmod 755 $BASE_DIR/backups" "Set backups permissions"
+
+  # Setup rootless Docker if not already installed
+  if ! sudo -u $SERVICE_USER test -f "$BASE_DIR/bin/docker"; then
+    log_info "Installing rootless Docker for $SERVICE_USER..."
+    execute_cmd "sudo -u $SERVICE_USER bash -c 'curl -fsSL https://get.docker.com/rootless | sh'" "Install rootless Docker"
+
+    # Configure environment
+    execute_cmd "sudo -u $SERVICE_USER bash -c 'echo \"export PATH=$BASE_DIR/bin:\\\$PATH\" >> $BASE_DIR/.bashrc'" "Add Docker to PATH"
+    execute_cmd "sudo -u $SERVICE_USER bash -c 'echo \"export DOCKER_HOST=unix:///run/user/$SERVICE_UID/docker.sock\" >> $BASE_DIR/.bashrc'" "Set Docker host"
+
+    log_success "Rootless Docker installed"
+  else
+    log_info "Rootless Docker already installed"
+  fi
+
+  # Configure Docker daemon for production
+  log_info "Configuring Docker daemon for production..."
+
+  # Create Docker daemon configuration directory
+  execute_cmd "sudo -u $SERVICE_USER mkdir -p $BASE_DIR/.config/docker" "Create Docker config directory"
+
+  cat >/tmp/daemon.json <<EOF
 {
   "log-driver": "json-file",
   "log-opts": {
@@ -708,40 +708,40 @@ setup_container_environment() {
   }
 }
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/daemon.json $BASE_DIR/.config/docker/daemon.json" "Install Docker daemon config"
-    
-    # Enable and start Docker for service user
-    execute_cmd "sudo loginctl enable-linger $SERVICE_USER" "Enable lingering for service user"
-    execute_cmd "sudo -u $SERVICE_USER systemctl --user enable docker" "Enable Docker service"
-    execute_cmd "sudo -u $SERVICE_USER systemctl --user start docker" "Start Docker service"
-    
-    # Wait for Docker to be ready
-    log_info "Waiting for Docker to be ready..."
-    local retries=30
-    while [ $retries -gt 0 ]; do
-        if docker_cmd "docker info" >/dev/null 2>&1; then
-            break
-        fi
-        sleep 2
-        ((retries--))
-    done
-    
-    if [ $retries -eq 0 ]; then
-        log_error "Docker failed to start properly"
-        exit 1
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/daemon.json $BASE_DIR/.config/docker/daemon.json" "Install Docker daemon config"
+
+  # Enable and start Docker for service user
+  execute_cmd "sudo loginctl enable-linger $SERVICE_USER" "Enable lingering for service user"
+  execute_cmd "sudo -u $SERVICE_USER systemctl --user enable docker" "Enable Docker service"
+  execute_cmd "sudo -u $SERVICE_USER systemctl --user start docker" "Start Docker service"
+
+  # Wait for Docker to be ready
+  log_info "Waiting for Docker to be ready..."
+  local retries=30
+  while [ $retries -gt 0 ]; do
+    if docker_cmd "docker info" >/dev/null 2>&1; then
+      break
     fi
-    
-    log_success "Docker is running and configured for production"
-    
-    # Create Docker networks with enhanced configuration
-    log_info "Creating segmented Docker networks..."
-    
-    docker_cmd "docker network create $FRONTEND_NETWORK --driver bridge --subnet=172.20.0.0/16 --gateway=172.20.0.1 || true"
-    docker_cmd "docker network create $BACKEND_NETWORK --driver bridge --subnet=172.21.0.0/16 --gateway=172.21.0.1 || true"
-    docker_cmd "docker network create $MGMT_NETWORK --driver bridge --subnet=172.22.0.0/16 --gateway=172.22.0.1 || true"
-    
-    log_success "Container environment setup completed"
+    sleep 2
+    ((retries--))
+  done
+
+  if [ $retries -eq 0 ]; then
+    log_error "Docker failed to start properly"
+    exit 1
+  fi
+
+  log_success "Docker is running and configured for production"
+
+  # Create Docker networks with enhanced configuration
+  log_info "Creating segmented Docker networks..."
+
+  docker_cmd "docker network create $FRONTEND_NETWORK --driver bridge --subnet=172.20.0.0/16 --gateway=172.20.0.1 || true"
+  docker_cmd "docker network create $BACKEND_NETWORK --driver bridge --subnet=172.21.0.0/16 --gateway=172.21.0.1 || true"
+  docker_cmd "docker network create $MGMT_NETWORK --driver bridge --subnet=172.22.0.0/16 --gateway=172.22.0.1 || true"
+
+  log_success "Container environment setup completed"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -749,15 +749,15 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════════════
 
 setup_secrets_management() {
-    log_section "Setting up Enhanced Secrets Management"
-    
-    local secrets_file="$BASE_DIR/secrets/secrets.env"
-    local docker_env="export DOCKER_HOST=unix:///run/user/$SERVICE_UID/docker.sock && export PATH=$BASE_DIR/bin:\$PATH"
-    
-    # Generate all secrets with appropriate complexity
-    log_info "Generating cryptographically secure secrets..."
-    
-    cat > /tmp/secrets.env << EOF
+  log_section "Setting up Enhanced Secrets Management"
+
+  local secrets_file="$BASE_DIR/secrets/secrets.env"
+  local docker_env="export DOCKER_HOST=unix:///run/user/$SERVICE_UID/docker.sock && export PATH=$BASE_DIR/bin:\$PATH"
+
+  # Generate all secrets with appropriate complexity
+  log_info "Generating cryptographically secure secrets..."
+
+  cat >/tmp/secrets.env <<EOF
 # Container Stack Secrets - Generated $(date)
 # WARNING: These are sensitive credentials - keep secure!
 
@@ -791,41 +791,41 @@ SMTP_PASSWORD=$(generate_password 16)
 # Backup encryption key
 BACKUP_ENCRYPTION_KEY=$(generate_secret 32)
 EOF
-    
-    # Encrypt secrets file
-    log_info "Encrypting secrets file..."
-    execute_cmd "sudo -u $SERVICE_USER gpg --batch --yes --symmetric --cipher-algo AES256 --output $BASE_DIR/secrets/secrets.env.gpg /tmp/secrets.env" "Encrypt secrets"
-    execute_cmd "rm /tmp/secrets.env" "Remove temporary secrets file"
-    
-    # Create unencrypted version for Docker (protected by file permissions)
-    execute_cmd "sudo -u $SERVICE_USER gpg --quiet --batch --yes --decrypt $BASE_DIR/secrets/secrets.env.gpg > $secrets_file" "Decrypt for Docker use"
-    execute_cmd "chmod 600 $secrets_file" "Secure secrets file permissions"
-    
-    log_success "Secrets generated and encrypted"
-    
-    # Create Docker secrets from file
-    log_info "Creating Docker secrets..."
-    
-    # Read secrets and create Docker secrets
-    while IFS='=' read -r key value; do
-        # Skip comments and empty lines
-        [[ $key =~ ^#.*$ ]] && continue
-        [[ -z $key ]] && continue
-        
-        # Clean up the key and value
-        key=$(echo "$key" | tr '[:upper:]' '[:lower:]' | sed 's/_/-/g')
-        value=$(echo "$value" | sed 's/\$[A-Z_]*//')
-        
-        # Skip if value is a variable reference
-        [[ $value =~ ^\$.*$ ]] && continue
-        
-        # Create Docker secret
-        echo "$value" | docker_cmd "docker secret create ${key} - 2>/dev/null || true"
-        
-    done < "$secrets_file"
-    
-    # Create systemd service for secrets management
-    cat > /tmp/container-secrets.service << EOF
+
+  # Encrypt secrets file
+  log_info "Encrypting secrets file..."
+  execute_cmd "sudo -u $SERVICE_USER gpg --batch --yes --symmetric --cipher-algo AES256 --output $BASE_DIR/secrets/secrets.env.gpg /tmp/secrets.env" "Encrypt secrets"
+  execute_cmd "rm /tmp/secrets.env" "Remove temporary secrets file"
+
+  # Create unencrypted version for Docker (protected by file permissions)
+  execute_cmd "sudo -u $SERVICE_USER gpg --quiet --batch --yes --decrypt $BASE_DIR/secrets/secrets.env.gpg > $secrets_file" "Decrypt for Docker use"
+  execute_cmd "sudo chmod 600 $secrets_file" "Secure secrets file permissions"
+
+  log_success "Secrets generated and encrypted"
+
+  # Create Docker secrets from file
+  log_info "Creating Docker secrets..."
+
+  # Read secrets and create Docker secrets
+  while IFS='=' read -r key value; do
+    # Skip comments and empty lines
+    [[ $key =~ ^#.*$ ]] && continue
+    [[ -z $key ]] && continue
+
+    # Clean up the key and value
+    key=$(echo "$key" | tr '[:upper:]' '[:lower:]' | sed 's/_/-/g')
+    value=$(echo "$value" | sed 's/\$[A-Z_]*//')
+
+    # Skip if value is a variable reference
+    [[ $value =~ ^\$.*$ ]] && continue
+
+    # Create Docker secret
+    echo "$value" | docker_cmd "docker secret create ${key} - 2>/dev/null || true"
+
+  done <"$secrets_file"
+
+  # Create systemd service for secrets management
+  cat >/tmp/container-secrets.service <<EOF
 [Unit]
 Description=Container Secrets Management
 After=docker.service
@@ -843,12 +843,12 @@ ExecStop=/bin/bash -c 'echo "Secrets service stopped"'
 [Install]
 WantedBy=multi-user.target
 EOF
-    
-    execute_cmd "mv /tmp/container-secrets.service /etc/systemd/system/container-secrets.service" "Install secrets service"
-    execute_cmd "systemctl daemon-reload" "Reload systemd"
-    execute_cmd "systemctl enable container-secrets.service" "Enable secrets service"
-    
-    log_success "Enhanced secrets management setup completed"
+
+  execute_cmd "sudo mv /tmp/container-secrets.service /etc/systemd/system/container-secrets.service" "Install secrets service"
+  execute_cmd "sudo systemctl daemon-reload" "Reload systemd"
+  execute_cmd "sudo systemctl enable container-secrets.service" "Enable secrets service"
+
+  log_success "Enhanced secrets management setup completed"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -856,15 +856,15 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════════════
 
 setup_monitoring_stack() {
-    if [ "$ENABLE_MONITORING" != "true" ]; then
-        log_info "Monitoring stack disabled, skipping..."
-        return
-    fi
-    
-    log_section "Setting up Advanced Monitoring Stack"
-    
-    # Create Prometheus configuration
-    cat > /tmp/prometheus.yml << EOF
+  if [ "$ENABLE_MONITORING" != "true" ]; then
+    log_info "Monitoring stack disabled, skipping..."
+    return
+  fi
+
+  log_section "Setting up Advanced Monitoring Stack"
+
+  # Create Prometheus configuration
+  cat >/tmp/prometheus.yml <<EOF
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -925,13 +925,13 @@ scrape_configs:
     scrape_interval: 60s
     metrics_path: /metrics
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/prometheus.yml $BASE_DIR/services/monitoring/prometheus/config/prometheus.yml" "Install Prometheus config"
-    
-    # Create alerting rules
-    execute_cmd "sudo -u $SERVICE_USER mkdir -p $BASE_DIR/services/monitoring/prometheus/config/rules" "Create rules directory"
-    
-    cat > /tmp/container-alerts.yml << EOF
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/prometheus.yml $BASE_DIR/services/monitoring/prometheus/config/prometheus.yml" "Install Prometheus config"
+
+  # Create alerting rules
+  execute_cmd "sudo -u $SERVICE_USER mkdir -p $BASE_DIR/services/monitoring/prometheus/config/rules" "Create rules directory"
+
+  cat >/tmp/container-alerts.yml <<EOF
 groups:
   - name: container.rules
     rules:
@@ -989,11 +989,11 @@ groups:
           summary: "Low disk space"
           description: "Disk space is below 10% on {{ \$labels.instance }}."
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/container-alerts.yml $BASE_DIR/services/monitoring/prometheus/config/rules/container-alerts.yml" "Install alert rules"
-    
-    # Create Grafana configuration
-    cat > /tmp/grafana.ini << EOF
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/container-alerts.yml $BASE_DIR/services/monitoring/prometheus/config/rules/container-alerts.yml" "Install alert rules"
+
+  # Create Grafana configuration
+  cat >/tmp/grafana.ini <<EOF
 [server]
 http_port = 3002
 domain = monitoring.${DOMAIN}
@@ -1045,12 +1045,12 @@ enable = publicDashboards
 [unified_alerting]
 enabled = true
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/grafana.ini $BASE_DIR/services/monitoring/grafana/config/grafana.ini" "Install Grafana config"
-    
-    # Create Loki configuration for centralized logging
-    if [ "$CENTRALIZED_LOGGING" = "true" ]; then
-        cat > /tmp/loki.yml << EOF
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/grafana.ini $BASE_DIR/services/monitoring/grafana/config/grafana.ini" "Install Grafana config"
+
+  # Create Loki configuration for centralized logging
+  if [ "$CENTRALIZED_LOGGING" = "true" ]; then
+    cat >/tmp/loki.yml <<EOF
 auth_enabled: false
 
 server:
@@ -1100,13 +1100,13 @@ table_manager:
   retention_deletes_enabled: true
   retention_period: ${LOG_RETENTION_DAYS}d
 EOF
-        
-        execute_cmd "sudo -u $SERVICE_USER mv /tmp/loki.yml $BASE_DIR/services/monitoring/loki/config.yml" "Install Loki config"
-    fi
-    
-    # Create Alertmanager configuration
-    if [ "$ENABLE_ALERTING" = "true" ]; then
-        cat > /tmp/alertmanager.yml << EOF
+
+    execute_cmd "sudo -u $SERVICE_USER mv /tmp/loki.yml $BASE_DIR/services/monitoring/loki/config.yml" "Install Loki config"
+  fi
+
+  # Create Alertmanager configuration
+  if [ "$ENABLE_ALERTING" = "true" ]; then
+    cat >/tmp/alertmanager.yml <<EOF
 global:
   smtp_smarthost: 'localhost:587'
   smtp_from: 'alerts@${DOMAIN}'
@@ -1128,7 +1128,8 @@ receivers:
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           {{ end }}
-$([ -n "$SLACK_WEBHOOK" ] && cat << SLACK_EOF
+$(
+      [ -n "$SLACK_WEBHOOK" ] && cat <<SLACK_EOF
 
     slack_configs:
       - api_url: '${SLACK_WEBHOOK}'
@@ -1136,7 +1137,7 @@ $([ -n "$SLACK_WEBHOOK" ] && cat << SLACK_EOF
         title: '[${DOMAIN}] Alert'
         text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
 SLACK_EOF
-)
+    )
 
 inhibit_rules:
   - source_match:
@@ -1145,12 +1146,12 @@ inhibit_rules:
       severity: 'warning'
     equal: ['alertname', 'dev', 'instance']
 EOF
-        
-        execute_cmd "sudo -u $SERVICE_USER mv /tmp/alertmanager.yml $BASE_DIR/services/monitoring/alertmanager/config.yml" "Install Alertmanager config"
-    fi
-    
-    # Create monitoring docker-compose
-    cat > /tmp/monitoring-compose.yml << EOF
+
+    execute_cmd "sudo -u $SERVICE_USER mv /tmp/alertmanager.yml $BASE_DIR/services/monitoring/alertmanager/config.yml" "Install Alertmanager config"
+  fi
+
+  # Create monitoring docker-compose
+  cat >/tmp/monitoring-compose.yml <<EOF
 version: '3.8'
 
 services:
@@ -1263,7 +1264,8 @@ services:
           memory: 256M
           cpus: '0.2'
 
-$([ "$CENTRALIZED_LOGGING" = "true" ] && cat << LOKI_EOF
+$(
+    [ "$CENTRALIZED_LOGGING" = "true" ] && cat <<LOKI_EOF
   loki:
     image: grafana/loki:latest
     container_name: loki
@@ -1296,9 +1298,10 @@ $([ "$CENTRALIZED_LOGGING" = "true" ] && cat << LOKI_EOF
     depends_on:
       - loki
 LOKI_EOF
-)
+  )
 
-$([ "$ENABLE_ALERTING" = "true" ] && cat << ALERT_EOF
+$(
+    [ "$ENABLE_ALERTING" = "true" ] && cat <<ALERT_EOF
   alertmanager:
     image: prom/alertmanager:latest
     container_name: alertmanager
@@ -1317,7 +1320,7 @@ $([ "$ENABLE_ALERTING" = "true" ] && cat << ALERT_EOF
           memory: 256M
           cpus: '0.1'
 ALERT_EOF
-)
+  )
 
 networks:
   ${MGMT_NETWORK}:
@@ -1327,10 +1330,10 @@ networks:
   ${FRONTEND_NETWORK}:
     external: true
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/monitoring-compose.yml $BASE_DIR/services/monitoring/docker-compose.yml" "Install monitoring compose"
-    
-    log_success "Advanced monitoring stack configured"
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/monitoring-compose.yml $BASE_DIR/services/monitoring/docker-compose.yml" "Install monitoring compose"
+
+  log_success "Advanced monitoring stack configured"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1338,10 +1341,10 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════════════
 
 create_enhanced_backup_system() {
-    log_section "Creating Enhanced Backup System"
-    
-    # Create comprehensive backup script
-    cat > /tmp/enhanced-backup.sh << EOF
+  log_section "Creating Enhanced Backup System"
+
+  # Create comprehensive backup script
+  cat >/tmp/enhanced-backup.sh <<EOF
 #!/bin/bash
 # Enhanced Backup System for Containerized Stack
 # Supports database consistency, incremental backups, and encryption
@@ -1532,12 +1535,12 @@ $([ -n "$BACKUP_S3_BUCKET" ] && echo "✓ Uploaded to S3: $BACKUP_S3_BUCKET")
 " | mail -s "[${DOMAIN}] Backup Completed Successfully" "${ALERT_EMAIL}" 2>/dev/null || true
 fi
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/enhanced-backup.sh $BASE_DIR/scripts/enhanced-backup.sh" "Install enhanced backup script"
-    execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/enhanced-backup.sh" "Make backup script executable"
-    
-    # Create restore script
-    cat > /tmp/enhanced-restore.sh << EOF
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/enhanced-backup.sh $BASE_DIR/scripts/enhanced-backup.sh" "Install enhanced backup script"
+  execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/enhanced-backup.sh" "Make backup script executable"
+
+  # Create restore script
+  cat >/tmp/enhanced-restore.sh <<EOF
 #!/bin/bash
 # Enhanced Restore System for Containerized Stack
 
@@ -1706,12 +1709,12 @@ else
     exit 1
 fi
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/enhanced-restore.sh $BASE_DIR/scripts/enhanced-restore.sh" "Install restore script"
-    execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/enhanced-restore.sh" "Make restore script executable"
-    
-    # Create backup verification script
-    cat > /tmp/verify-backup.sh << EOF
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/enhanced-restore.sh $BASE_DIR/scripts/enhanced-restore.sh" "Install restore script"
+  execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/enhanced-restore.sh" "Make restore script executable"
+
+  # Create backup verification script
+  cat >/tmp/verify-backup.sh <<EOF
 #!/bin/bash
 # Backup Verification Script
 
@@ -1801,15 +1804,18 @@ rm -rf "\$VERIFY_DIR"
 echo "=================="
 echo "Backup verification completed"
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/verify-backup.sh $BASE_DIR/scripts/verify-backup.sh" "Install backup verification script"
-    execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/verify-backup.sh" "Make verification script executable"
-    
-    # Set up backup cron job
-    log_info "Setting up automated backup schedule..."
-    (sudo -u $SERVICE_USER crontab -l 2>/dev/null; echo "$BACKUP_SCHEDULE $BASE_DIR/scripts/enhanced-backup.sh >> $BASE_DIR/logs/backup.log 2>&1") | sudo -u $SERVICE_USER crontab -
-    
-    log_success "Enhanced backup system created"
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/verify-backup.sh $BASE_DIR/scripts/verify-backup.sh" "Install backup verification script"
+  execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/verify-backup.sh" "Make verification script executable"
+
+  # Set up backup cron job
+  log_info "Setting up automated backup schedule..."
+  (
+    sudo -u $SERVICE_USER crontab -l 2>/dev/null
+    echo "$BACKUP_SCHEDULE $BASE_DIR/scripts/enhanced-backup.sh >> $BASE_DIR/logs/backup.log 2>&1"
+  ) | sudo -u $SERVICE_USER crontab -
+
+  log_success "Enhanced backup system created"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1817,10 +1823,10 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════════════
 
 create_rolling_update_system() {
-    log_section "Creating Rolling Update System"
-    
-    # Create rolling update script
-    cat > /tmp/rolling-update.sh << EOF
+  log_section "Creating Rolling Update System"
+
+  # Create rolling update script
+  cat >/tmp/rolling-update.sh <<EOF
 #!/bin/bash
 # Rolling Update System for Containerized Services
 # Supports health checks, rollback, and zero-downtime updates
@@ -2061,12 +2067,12 @@ fi
 
 perform_rolling_update "\$SERVICE_DIR"
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/rolling-update.sh $BASE_DIR/scripts/rolling-update.sh" "Install rolling update script"
-    execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/rolling-update.sh" "Make rolling update script executable"
-    
-    # Create update all services script
-    cat > /tmp/update-all-services.sh << EOF
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/rolling-update.sh $BASE_DIR/scripts/rolling-update.sh" "Install rolling update script"
+  execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/rolling-update.sh" "Make rolling update script executable"
+
+  # Create update all services script
+  cat >/tmp/update-all-services.sh <<EOF
 #!/bin/bash
 # Update All Services with Rolling Updates
 
@@ -2113,11 +2119,11 @@ else
     exit 1
 fi
 EOF
-    
-    execute_cmd "sudo -u $SERVICE_USER mv /tmp/update-all-services.sh $BASE_DIR/scripts/update-all-services.sh" "Install update all script"
-    execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/update-all-services.sh" "Make update all script executable"
-    
-    log_success "Rolling update system created"
+
+  execute_cmd "sudo -u $SERVICE_USER mv /tmp/update-all-services.sh $BASE_DIR/scripts/update-all-services.sh" "Install update all script"
+  execute_cmd "sudo -u $SERVICE_USER chmod +x $BASE_DIR/scripts/update-all-services.sh" "Make update all script executable"
+
+  log_success "Rolling update system created"
 }
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -2125,104 +2131,105 @@ EOF
 # ═══════════════════════════════════════════════════════════════════════════════
 
 main() {
-    # Create initial log directory
-    mkdir -p "$BASE_DIR/logs" 2>/dev/null || mkdir -p "/tmp/setup-logs"
-    
-    log_section "Starting Enhanced Production Container Stack Setup"
-    
-    echo -e "${BLUE}🏗️  Setting up production-ready containerized stack for: ${WHITE}${DOMAIN}${NC}"
-    echo -e "${BLUE}📧 Email: ${WHITE}${EMAIL}${NC}"
-    echo -e "${BLUE}👤 Service User: ${WHITE}${SERVICE_USER}${NC}"
-    echo -e "${BLUE}📁 Base Directory: ${WHITE}${BASE_DIR}${NC}"
-    echo -e "${BLUE}🔐 Security: ${WHITE}AppArmor, UFW, fail2ban, rootless Docker${NC}"
-    echo -e "${BLUE}📊 Monitoring: ${WHITE}$([ "$ENABLE_MONITORING" = "true" ] && echo "Enabled (Prometheus + Grafana + Loki)" || echo "Disabled")${NC}"
-    echo -e "${BLUE}💾 Backup: ${WHITE}Enhanced with encryption and S3 support${NC}"
-    echo -e "${BLUE}🔄 Updates: ${WHITE}Rolling updates with health checks${NC}"
-    
-    if [ "$DRY_RUN" = "true" ]; then
-        echo -e "\n${CYAN}🧪 DRY RUN MODE - No changes will be made${NC}\n"
+  # Create initial log directory
+  mkdir -p "$BASE_DIR/logs" 2>/dev/null || mkdir -p "/tmp/setup-logs"
+
+  log_section "Starting Enhanced Production Container Stack Setup"
+
+  echo -e "${BLUE}🏗️  Setting up production-ready containerized stack for: ${WHITE}${DOMAIN}${NC}"
+  echo -e "${BLUE}📧 Email: ${WHITE}${EMAIL}${NC}"
+  echo -e "${BLUE}👤 Service User: ${WHITE}${SERVICE_USER}${NC}"
+  echo -e "${BLUE}📁 Base Directory: ${WHITE}${BASE_DIR}${NC}"
+  echo -e "${BLUE}🔐 Security: ${WHITE}AppArmor, UFW, fail2ban, rootless Docker${NC}"
+  echo -e "${BLUE}📊 Monitoring: ${WHITE}$([ "$ENABLE_MONITORING" = "true" ] && echo "Enabled (Prometheus + Grafana + Loki)" || echo "Disabled")${NC}"
+  echo -e "${BLUE}💾 Backup: ${WHITE}Enhanced with encryption and S3 support${NC}"
+  echo -e "${BLUE}🔄 Updates: ${WHITE}Rolling updates with health checks${NC}"
+
+  if [ "$DRY_RUN" = "true" ]; then
+    echo -e "\n${CYAN}🧪 DRY RUN MODE - No changes will be made${NC}\n"
+  fi
+
+  # Confirm before proceeding (unless in dry run mode)
+  if [ "$DRY_RUN" != "true" ]; then
+    echo -e "\n${YELLOW}⚠️ This will install and configure a complete production-ready containerized stack.${NC}"
+    echo -e "${YELLOW}   This includes system hardening, security configurations, and service deployment.${NC}"
+    echo -e "${YELLOW}   Continue? (y/N)${NC}"
+    read -r confirm
+    if [[ ! $confirm =~ ^[Yy]$ ]]; then
+      log_info "Setup cancelled by user"
+      exit 0
     fi
-    
-    # Confirm before proceeding (unless in dry run mode)
-    if [ "$DRY_RUN" != "true" ]; then
-        echo -e "\n${YELLOW}⚠️ This will install and configure a complete production-ready containerized stack.${NC}"
-        echo -e "${YELLOW}   This includes system hardening, security configurations, and service deployment.${NC}"
-        echo -e "${YELLOW}   Continue? (y/N)${NC}"
-        read -r confirm
-        if [[ ! $confirm =~ ^[Yy]$ ]]; then
-            log_info "Setup cancelled by user"
-            exit 0
-        fi
-    fi
-    
-    # Execute setup steps
-    check_prerequisites
-    harden_host_os
-    setup_container_environment
-    setup_secrets_management
-    setup_monitoring_stack
-    # Note: Individual service setup functions would continue here
-    # setup_supabase_containers
-    # setup_n8n_container  
-    # setup_nginx_container
-    # setup_ssl_certificates
-    create_enhanced_backup_system
-    create_rolling_update_system
-    
-    # Final summary
-    log_section "Enhanced Production Setup Complete!"
-    
-    echo -e "${GREEN}✅ Production-ready containerized stack setup completed successfully!${NC}"
-    echo ""
-    echo -e "${BLUE}📋 Next Steps:${NC}"
-    echo -e "1. ${YELLOW}Switch to service user:${NC} sudo su - $SERVICE_USER"
-    echo -e "2. ${YELLOW}Start all services:${NC} $BASE_DIR/scripts/start-all.sh"
-    echo -e "3. ${YELLOW}Setup SSL certificates:${NC} $BASE_DIR/scripts/setup-ssl.sh"
-    echo -e "4. ${YELLOW}Check system status:${NC} $BASE_DIR/scripts/status.sh"
-    echo -e "5. ${YELLOW}View secrets:${NC} gpg --decrypt $BASE_DIR/secrets/secrets.env.gpg"
-    echo ""
-    echo -e "${BLUE}🌐 Your Services:${NC}"
-    echo -e "- ${WHITE}Main site:${NC} https://${DOMAIN}"
-    echo -e "- ${WHITE}Supabase API:${NC} https://supabase.${DOMAIN}"
-    echo -e "- ${WHITE}Supabase Studio:${NC} https://studio.${DOMAIN}"
-    echo -e "- ${WHITE}N8N:${NC} https://n8n.${DOMAIN}"
-    $([ "$ENABLE_MONITORING" = "true" ] && echo -e "- ${WHITE}Monitoring:${NC} https://monitoring.${DOMAIN}")
-    echo ""
-    echo -e "${BLUE}🔧 Enhanced Management:${NC}"
-    echo -e "- ${WHITE}Start all:${NC} $BASE_DIR/scripts/start-all.sh"
-    echo -e "- ${WHITE}Rolling updates:${NC} $BASE_DIR/scripts/rolling-update.sh <service>"
-    echo -e "- ${WHITE}Enhanced backup:${NC} $BASE_DIR/scripts/enhanced-backup.sh"
-    echo -e "- ${WHITE}Restore:${NC} $BASE_DIR/scripts/enhanced-restore.sh <backup-file>"
-    echo -e "- ${WHITE}Verify backup:${NC} $BASE_DIR/scripts/verify-backup.sh <backup-file>"
-    echo -e "- ${WHITE}Status check:${NC} $BASE_DIR/scripts/status.sh"
-    echo ""
-    echo -e "${BLUE}🛡️ Security Features:${NC}"
-    echo -e "- ${GREEN}✓${NC} AppArmor container profiles"
-    echo -e "- ${GREEN}✓${NC} UFW firewall with rate limiting"
-    echo -e "- ${GREEN}✓${NC} fail2ban intrusion prevention"
-    echo -e "- ${GREEN}✓${NC} Encrypted secrets management"
-    echo -e "- ${GREEN}✓${NC} Network segmentation"
-    echo -e "- ${GREEN}✓${NC} Rootless containers"
-    echo -e "- ${GREEN}✓${NC} Audit logging"
-    echo ""
-    echo -e "${BLUE}📊 Operational Features:${NC}"
-    echo -e "- ${GREEN}✓${NC} Comprehensive monitoring with Prometheus/Grafana"
-    echo -e "- ${GREEN}✓${NC} Centralized logging with Loki"
-    echo -e "- ${GREEN}✓${NC} Automated encrypted backups"
-    echo -e "- ${GREEN}✓${NC} Rolling updates with health checks"
-    echo -e "- ${GREEN}✓${NC} Automatic SSL certificate renewal"
-    echo -e "- ${GREEN}✓${NC} Container resource limits"
-    echo ""
-    echo -e "${YELLOW}⚠️  Important Security Notes:${NC}"
-    echo -e "- ${RED}Change all default passwords immediately${NC}"
-    echo -e "- ${RED}Secure the encrypted secrets file${NC}"
-    echo -e "- ${RED}Configure DNS records to point to this server${NC}"
-    echo -e "- ${RED}Test backup and restore procedures${NC}"
-    echo -e "- ${RED}Review monitoring alerts and thresholds${NC}"
-    echo -e "- ${RED}Set up external backup storage (S3)${NC}"
-    echo ""
-    echo -e "${GREEN}🎉 Your enhanced, production-ready containerized stack is ready!${NC}"
+  fi
+
+  # Execute setup steps
+  check_prerequisites
+  harden_host_os
+  setup_container_environment
+  setup_secrets_management
+  setup_monitoring_stack
+  # Note: Individual service setup functions would continue here
+  # setup_supabase_containers
+  # setup_n8n_container
+  # setup_nginx_container
+  # setup_ssl_certificates
+  create_enhanced_backup_system
+  create_rolling_update_system
+
+  # Final summary
+  log_section "Enhanced Production Setup Complete!"
+
+  echo -e "${GREEN}✅ Production-ready containerized stack setup completed successfully!${NC}"
+  echo ""
+  echo -e "${BLUE}📋 Next Steps:${NC}"
+  echo -e "1. ${YELLOW}Switch to service user:${NC} sudo su - $SERVICE_USER"
+  echo -e "2. ${YELLOW}Start all services:${NC} $BASE_DIR/scripts/start-all.sh"
+  echo -e "3. ${YELLOW}Setup SSL certificates:${NC} $BASE_DIR/scripts/setup-ssl.sh"
+  echo -e "4. ${YELLOW}Check system status:${NC} $BASE_DIR/scripts/status.sh"
+  echo -e "5. ${YELLOW}View secrets:${NC} gpg --decrypt $BASE_DIR/secrets/secrets.env.gpg"
+  echo ""
+  echo -e "${BLUE}🌐 Your Services:${NC}"
+  echo -e "- ${WHITE}Main site:${NC} https://${DOMAIN}"
+  echo -e "- ${WHITE}Supabase API:${NC} https://supabase.${DOMAIN}"
+  echo -e "- ${WHITE}Supabase Studio:${NC} https://studio.${DOMAIN}"
+  echo -e "- ${WHITE}N8N:${NC} https://n8n.${DOMAIN}"
+  $([ "$ENABLE_MONITORING" = "true" ] && echo -e "- ${WHITE}Monitoring:${NC} https://monitoring.${DOMAIN}")
+  echo ""
+  echo -e "${BLUE}🔧 Enhanced Management:${NC}"
+  echo -e "- ${WHITE}Start all:${NC} $BASE_DIR/scripts/start-all.sh"
+  echo -e "- ${WHITE}Rolling updates:${NC} $BASE_DIR/scripts/rolling-update.sh <service>"
+  echo -e "- ${WHITE}Enhanced backup:${NC} $BASE_DIR/scripts/enhanced-backup.sh"
+  echo -e "- ${WHITE}Restore:${NC} $BASE_DIR/scripts/enhanced-restore.sh <backup-file>"
+  echo -e "- ${WHITE}Verify backup:${NC} $BASE_DIR/scripts/verify-backup.sh <backup-file>"
+  echo -e "- ${WHITE}Status check:${NC} $BASE_DIR/scripts/status.sh"
+  echo ""
+  echo -e "${BLUE}🛡️ Security Features:${NC}"
+  echo -e "- ${GREEN}✓${NC} AppArmor container profiles"
+  echo -e "- ${GREEN}✓${NC} UFW firewall with rate limiting"
+  echo -e "- ${GREEN}✓${NC} fail2ban intrusion prevention"
+  echo -e "- ${GREEN}✓${NC} Encrypted secrets management"
+  echo -e "- ${GREEN}✓${NC} Network segmentation"
+  echo -e "- ${GREEN}✓${NC} Rootless containers"
+  echo -e "- ${GREEN}✓${NC} Audit logging"
+  echo ""
+  echo -e "${BLUE}📊 Operational Features:${NC}"
+  echo -e "- ${GREEN}✓${NC} Comprehensive monitoring with Prometheus/Grafana"
+  echo -e "- ${GREEN}✓${NC} Centralized logging with Loki"
+  echo -e "- ${GREEN}✓${NC} Automated encrypted backups"
+  echo -e "- ${GREEN}✓${NC} Rolling updates with health checks"
+  echo -e "- ${GREEN}✓${NC} Automatic SSL certificate renewal"
+  echo -e "- ${GREEN}✓${NC} Container resource limits"
+  echo ""
+  echo -e "${YELLOW}⚠️  Important Security Notes:${NC}"
+  echo -e "- ${RED}Change all default passwords immediately${NC}"
+  echo -e "- ${RED}Secure the encrypted secrets file${NC}"
+  echo -e "- ${RED}Configure DNS records to point to this server${NC}"
+  echo -e "- ${RED}Test backup and restore procedures${NC}"
+  echo -e "- ${RED}Review monitoring alerts and thresholds${NC}"
+  echo -e "- ${RED}Set up external backup storage (S3)${NC}"
+  echo ""
+  echo -e "${GREEN}🎉 Your enhanced, production-ready containerized stack is ready!${NC}"
 }
 
 # Run main function
 main "$@"
+

@@ -67,8 +67,8 @@ Your AI assistant needs more than just clever algorithms—it needs a robust, se
 ```bash
 # On a fresh Debian 12 server (4GB RAM minimum)
 curl -fsSL https://raw.githubusercontent.com/odysseyalive/JarvisJR_Stack/jj_production_stack.sh -o setup.sh
-chmod +x setup.sh
-sudo ./setup.sh yourdomain.com
+# IMPORTANT: Review and adjust parameters in setup.sh as needed
+bash setup.sh
 ```
 
 That's it. Grab a coffee while your AI assistant's infrastructure comes to life—about 20 minutes from empty server to fully operational fortress.
@@ -138,4 +138,3 @@ Your JarvisJR journey begins with this infrastructure, continues with the AI Pro
 Like finding that perfect rhythm where every element works in harmony, discovering the right AI automation setup reveals something profound: a business system where technology genuinely amplifies your capabilities, automation creates space for strategic thinking, and your professional life finally operates at the speed of your ambition.
 
 Your AI Second Brain awaits. The infrastructure is just the beginning—join the [AI Productivity Hub](https://www.skool.com/ai-productivity-hub/about) to unlock its full potential.
-
